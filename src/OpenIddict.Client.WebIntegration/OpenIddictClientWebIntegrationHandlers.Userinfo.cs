@@ -73,7 +73,7 @@ public static partial class OpenIddictClientWebIntegrationHandlers
                 {
                     // The userinfo endpoints exposed by these providers
                     // are based on GraphQL, which requires using POST:
-                    ProviderTypes.Meetup or ProviderTypes.SubscribeStar => HttpMethod.Post,
+                    ProviderTypes.Linear or ProviderTypes.Meetup or ProviderTypes.SubscribeStar => HttpMethod.Post,
 
                     // The userinfo endpoints exposed by these providers
                     // use custom protocols that require using POST:
@@ -282,7 +282,7 @@ public static partial class OpenIddictClientWebIntegrationHandlers
                 {
                     // The userinfo endpoints exposed by these providers are based on GraphQL,
                     // which requires sending the request parameters as a JSON payload:
-                    ProviderTypes.Meetup or ProviderTypes.SubscribeStar => JsonContent.Create(
+                    ProviderTypes.Linear or ProviderTypes.Meetup or ProviderTypes.SubscribeStar => JsonContent.Create(
                         context.Transaction.Request,
                         OpenIddictSerializer.Default.Request,
                         new MediaTypeHeaderValue(MediaTypes.Json)
@@ -433,9 +433,21 @@ public static partial class OpenIddictClientWebIntegrationHandlers
                         => new(context.Response["data"]?.GetNamedParameters() ??
                         throw new InvalidOperationException(SR.FormatID0334("data"))),
 
+                    // Linear returns a nested "viewer" object that is itself nested in a GraphQL "data" node.
+                    ProviderTypes.Linear => new(context.Response["data"]?["viewer"]?.GetNamedParameters() ??
+                        throw new InvalidOperationException(SR.FormatID0334("data/viewer"))),
+
                     // Meetup returns a nested "self" object that is itself nested in a GraphQL "data" node.
                     ProviderTypes.Meetup => new(context.Response["data"]?["self"]?.GetNamedParameters() ??
                         throw new InvalidOperationException(SR.FormatID0334("data/self"))),
+
+                    // Miro returns a nested "user" object, as well as a nested "team" and "organization".
+                    ProviderTypes.Miro => new(context.Response["user"]?.GetNamedParameters() ??
+                        throw new InvalidOperationException(SR.FormatID0334("user")))
+                    {
+                        ["organization"] = context.Response["organization"],
+                        ["team"] = context.Response["team"]
+                    },
 
                     // Nextcloud returns a nested "data" object that is itself nested in a "ocs" node.
                     ProviderTypes.Nextcloud => new(context.Response["ocs"]?["data"]?.GetNamedParameters() ??
