@@ -200,7 +200,7 @@ public static partial class OpenIddictServerOwinHandlers
                 response.ContentLength = buffer.Length;
                 response.ContentType = "text/html;charset=UTF-8";
 
-                response.Headers[Headers.CacheControl] = "no-cache";
+                response.Headers[Headers.CacheControl] = "no-store";
                 response.Headers[Headers.Pragma] = "no-cache";
                 response.Headers[Headers.Expires] = "-1";
 

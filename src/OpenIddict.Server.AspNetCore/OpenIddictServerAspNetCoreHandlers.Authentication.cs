@@ -208,7 +208,7 @@ public static partial class OpenIddictServerAspNetCoreHandlers
                 response.ContentLength = buffer.Length;
                 response.ContentType = "text/html;charset=UTF-8";
 
-                response.Headers[HeaderNames.CacheControl] = "no-cache";
+                response.Headers[HeaderNames.CacheControl] = "no-store";
                 response.Headers[HeaderNames.Pragma] = "no-cache";
                 response.Headers[HeaderNames.Expires] = "-1";
 
