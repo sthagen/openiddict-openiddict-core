@@ -137,6 +137,12 @@ public static partial class OpenIddictClientHandlers
                             element.ValueKind is JsonValueKind.Array &&
                             OpenIddictHelpers.ValidateArrayElements(element, JsonValueKind.String),
 
+                    // The following parameters MUST be formatted as JSON objects and only contain string values:
+                    Metadata.MtlsEndpointAliases
+                        => ((JsonElement) value) is JsonElement element &&
+                            element.ValueKind is JsonValueKind.Object &&
+                            OpenIddictHelpers.ValidateObjectElements(element, JsonValueKind.String),
+
                     // The following parameters MUST be formatted as booleans:
                     Metadata.AuthorizationResponseIssParameterSupported or
                     Metadata.RequirePushedAuthorizationRequests         or
@@ -513,15 +519,9 @@ public static partial class OpenIddictClientHandlers
                     throw new ArgumentNullException(nameof(context));
                 }
 
-                var aliases = context.Response[Metadata.MtlsEndpointAliases]?.GetNamedParameters();
-                if (aliases is not { Count: > 0 })
-                {
-                    return default;
-                }
-
                 // Note: as recommended by the specification, values present in the "mtls_endpoint_aliases" node
                 // that can't be recognized as OAuth 2.0 endpoints or are not valid URIs are simply ignored.
-                var endpoint = (string?) aliases[Metadata.DeviceAuthorizationEndpoint];
+                var endpoint = (string?) context.Response[Metadata.MtlsEndpointAliases]?[Metadata.DeviceAuthorizationEndpoint];
                 if (Uri.TryCreate(endpoint, UriKind.Absolute, out Uri? uri) && !OpenIddictHelpers.IsImplicitFileUri(uri))
                 {
                     context.Configuration.MtlsDeviceAuthorizationEndpoint = uri;
@@ -555,15 +555,9 @@ public static partial class OpenIddictClientHandlers
                     throw new ArgumentNullException(nameof(context));
                 }
 
-                var aliases = context.Response[Metadata.MtlsEndpointAliases]?.GetNamedParameters();
-                if (aliases is not { Count: > 0 })
-                {
-                    return default;
-                }
-
                 // Note: as recommended by the specification, values present in the "mtls_endpoint_aliases" node
                 // that can't be recognized as OAuth 2.0 endpoints or are not valid URIs are simply ignored.
-                var endpoint = (string?) aliases[Metadata.IntrospectionEndpoint];
+                var endpoint = (string?) context.Response[Metadata.MtlsEndpointAliases]?[Metadata.IntrospectionEndpoint];
                 if (Uri.TryCreate(endpoint, UriKind.Absolute, out Uri? uri) && !OpenIddictHelpers.IsImplicitFileUri(uri))
                 {
                     context.Configuration.MtlsIntrospectionEndpoint = uri;
@@ -596,15 +590,9 @@ public static partial class OpenIddictClientHandlers
                     throw new ArgumentNullException(nameof(context));
                 }
 
-                var aliases = context.Response[Metadata.MtlsEndpointAliases]?.GetNamedParameters();
-                if (aliases is not { Count: > 0 })
-                {
-                    return default;
-                }
-
                 // Note: as recommended by the specification, values present in the "mtls_endpoint_aliases" node
                 // that can't be recognized as OAuth 2.0 endpoints or are not valid URIs are simply ignored.
-                var endpoint = (string?) aliases[Metadata.PushedAuthorizationRequestEndpoint];
+                var endpoint = (string?) context.Response[Metadata.MtlsEndpointAliases]?[Metadata.PushedAuthorizationRequestEndpoint];
                 if (Uri.TryCreate(endpoint, UriKind.Absolute, out Uri? uri) && !OpenIddictHelpers.IsImplicitFileUri(uri))
                 {
                     context.Configuration.MtlsPushedAuthorizationEndpoint = uri;
@@ -637,15 +625,9 @@ public static partial class OpenIddictClientHandlers
                     throw new ArgumentNullException(nameof(context));
                 }
 
-                var aliases = context.Response[Metadata.MtlsEndpointAliases]?.GetNamedParameters();
-                if (aliases is not { Count: > 0 })
-                {
-                    return default;
-                }
-
                 // Note: as recommended by the specification, values present in the "mtls_endpoint_aliases" node
                 // that can't be recognized as OAuth 2.0 endpoints or are not valid URIs are simply ignored.
-                var endpoint = (string?) aliases[Metadata.RevocationEndpoint];
+                var endpoint = (string?) context.Response[Metadata.MtlsEndpointAliases]?[Metadata.RevocationEndpoint];
                 if (Uri.TryCreate(endpoint, UriKind.Absolute, out Uri? uri) && !OpenIddictHelpers.IsImplicitFileUri(uri))
                 {
                     context.Configuration.MtlsRevocationEndpoint = uri;
@@ -678,15 +660,9 @@ public static partial class OpenIddictClientHandlers
                     throw new ArgumentNullException(nameof(context));
                 }
 
-                var aliases = context.Response[Metadata.MtlsEndpointAliases]?.GetNamedParameters();
-                if (aliases is not { Count: > 0 })
-                {
-                    return default;
-                }
-
                 // Note: as recommended by the specification, values present in the "mtls_endpoint_aliases" node
                 // that can't be recognized as OAuth 2.0 endpoints or are not valid URIs are simply ignored.
-                var endpoint = (string?) aliases[Metadata.TokenEndpoint];
+                var endpoint = (string?) context.Response[Metadata.MtlsEndpointAliases]?[Metadata.TokenEndpoint];
                 if (Uri.TryCreate(endpoint, UriKind.Absolute, out Uri? uri) && !OpenIddictHelpers.IsImplicitFileUri(uri))
                 {
                     context.Configuration.MtlsTokenEndpoint = uri;
@@ -719,15 +695,9 @@ public static partial class OpenIddictClientHandlers
                     throw new ArgumentNullException(nameof(context));
                 }
 
-                var aliases = context.Response[Metadata.MtlsEndpointAliases]?.GetNamedParameters();
-                if (aliases is not { Count: > 0 })
-                {
-                    return default;
-                }
-
                 // Note: as recommended by the specification, values present in the "mtls_endpoint_aliases" node
                 // that can't be recognized as OAuth 2.0 endpoints or are not valid URIs are simply ignored.
-                var endpoint = (string?) aliases[Metadata.UserInfoEndpoint];
+                var endpoint = (string?) context.Response[Metadata.MtlsEndpointAliases]?[Metadata.UserInfoEndpoint];
                 if (Uri.TryCreate(endpoint, UriKind.Absolute, out Uri? uri) && !OpenIddictHelpers.IsImplicitFileUri(uri))
                 {
                     context.Configuration.MtlsUserInfoEndpoint = uri;
@@ -933,17 +903,11 @@ public static partial class OpenIddictClientHandlers
                 }
 
                 // Resolve the grant types supported by the authorization endpoint, if available.
-                var types = context.Response[Metadata.GrantTypesSupported]?.GetUnnamedParameters();
-                if (types is { Count: > 0 })
+                foreach (var type in (ImmutableArray<string?>?) context.Response[Metadata.GrantTypesSupported] ?? [])
                 {
-                    for (var index = 0; index < types.Count; index++)
+                    if (!string.IsNullOrEmpty(type))
                     {
-                        // Note: custom values are allowed in this case.
-                        var type = (string?) types[index];
-                        if (!string.IsNullOrEmpty(type))
-                        {
-                            context.Configuration.GrantTypesSupported.Add(type);
-                        }
+                        context.Configuration.GrantTypesSupported.Add(type);
                     }
                 }
 
@@ -975,17 +939,11 @@ public static partial class OpenIddictClientHandlers
                 }
 
                 // Resolve the response modes supported by the authorization endpoint, if available.
-                var modes = context.Response[Metadata.ResponseModesSupported]?.GetUnnamedParameters();
-                if (modes is { Count: > 0 })
+                foreach (var mode in (ImmutableArray<string?>?) context.Response[Metadata.ResponseModesSupported] ?? [])
                 {
-                    for (var index = 0; index < modes.Count; index++)
+                    if (!string.IsNullOrEmpty(mode))
                     {
-                        // Note: custom values are allowed in this case.
-                        var mode = (string?) modes[index];
-                        if (!string.IsNullOrEmpty(mode))
-                        {
-                            context.Configuration.ResponseModesSupported.Add(mode);
-                        }
+                        context.Configuration.ResponseModesSupported.Add(mode);
                     }
                 }
 
@@ -1017,17 +975,11 @@ public static partial class OpenIddictClientHandlers
                 }
 
                 // Resolve the response types supported by the authorization endpoint, if available.
-                var types = context.Response[Metadata.ResponseTypesSupported]?.GetUnnamedParameters();
-                if (types is { Count: > 0 })
+                foreach (var type in (ImmutableArray<string?>?) context.Response[Metadata.ResponseTypesSupported] ?? [])
                 {
-                    for (var index = 0; index < types.Count; index++)
+                    if (!string.IsNullOrEmpty(type))
                     {
-                        // Note: custom values are allowed in this case.
-                        var type = (string?) types[index];
-                        if (!string.IsNullOrEmpty(type))
-                        {
-                            context.Configuration.ResponseTypesSupported.Add(type);
-                        }
+                        context.Configuration.ResponseTypesSupported.Add(type);
                     }
                 }
 
@@ -1059,17 +1011,11 @@ public static partial class OpenIddictClientHandlers
                 }
 
                 // Resolve the code challenge methods supported by the authorization endpoint, if available.
-                var methods = context.Response[Metadata.CodeChallengeMethodsSupported]?.GetUnnamedParameters();
-                if (methods is { Count: > 0 })
+                foreach (var method in (ImmutableArray<string?>?) context.Response[Metadata.CodeChallengeMethodsSupported] ?? [])
                 {
-                    for (var index = 0; index < methods.Count; index++)
+                    if (!string.IsNullOrEmpty(method))
                     {
-                        // Note: custom values are allowed in this case.
-                        var method = (string?) methods[index];
-                        if (!string.IsNullOrEmpty(method))
-                        {
-                            context.Configuration.CodeChallengeMethodsSupported.Add(method);
-                        }
+                        context.Configuration.CodeChallengeMethodsSupported.Add(method);
                     }
                 }
 
@@ -1101,17 +1047,11 @@ public static partial class OpenIddictClientHandlers
                 }
 
                 // Resolve the scopes supported by the remote server, if available.
-                var scopes = context.Response[Metadata.ScopesSupported]?.GetUnnamedParameters();
-                if (scopes is { Count: > 0 })
+                foreach (var scope in (ImmutableArray<string?>?) context.Response[Metadata.ScopesSupported] ?? [])
                 {
-                    for (var index = 0; index < scopes.Count; index++)
+                    if (!string.IsNullOrEmpty(scope))
                     {
-                        // Note: custom values are allowed in this case.
-                        var scope = (string?) scopes[index];
-                        if (!string.IsNullOrEmpty(scope))
-                        {
-                            context.Configuration.ScopesSupported.Add(scope);
-                        }
+                        context.Configuration.ScopesSupported.Add(scope);
                     }
                 }
 
@@ -1240,17 +1180,11 @@ public static partial class OpenIddictClientHandlers
                 //
                 // Note: "device_authorization_endpoint_auth_methods_supported" is not a standard parameter
                 // but is supported by OpenIddict 4.3.0 and higher for consistency with the other endpoints.
-                var methods = context.Response[Metadata.DeviceAuthorizationEndpointAuthMethodsSupported]?.GetUnnamedParameters();
-                if (methods is { Count: > 0 })
+                foreach (var method in (ImmutableArray<string?>?) context.Response[Metadata.DeviceAuthorizationEndpointAuthMethodsSupported] ?? [])
                 {
-                    for (var index = 0; index < methods.Count; index++)
+                    if (!string.IsNullOrEmpty(method))
                     {
-                        // Note: custom values are allowed in this case.
-                        var method = (string?) methods[index];
-                        if (!string.IsNullOrEmpty(method))
-                        {
-                            context.Configuration.DeviceAuthorizationEndpointAuthMethodsSupported.Add(method);
-                        }
+                        context.Configuration.DeviceAuthorizationEndpointAuthMethodsSupported.Add(method);
                     }
                 }
 
@@ -1283,17 +1217,11 @@ public static partial class OpenIddictClientHandlers
                 }
 
                 // Resolve the client authentication methods supported by the introspection endpoint, if available.
-                var methods = context.Response[Metadata.IntrospectionEndpointAuthMethodsSupported]?.GetUnnamedParameters();
-                if (methods is { Count: > 0 })
+                foreach (var method in (ImmutableArray<string?>?) context.Response[Metadata.IntrospectionEndpointAuthMethodsSupported] ?? [])
                 {
-                    for (var index = 0; index < methods.Count; index++)
+                    if (!string.IsNullOrEmpty(method))
                     {
-                        // Note: custom values are allowed in this case.
-                        var method = (string?) methods[index];
-                        if (!string.IsNullOrEmpty(method))
-                        {
-                            context.Configuration.IntrospectionEndpointAuthMethodsSupported.Add(method);
-                        }
+                        context.Configuration.IntrospectionEndpointAuthMethodsSupported.Add(method);
                     }
                 }
 
@@ -1329,17 +1257,11 @@ public static partial class OpenIddictClientHandlers
                 //
                 // Note: "pushed_authorization_request_endpoint_auth_methods_supported" is not a standard parameter
                 // but is supported by OpenIddict 6.1.0 and higher for consistency with the other endpoints.
-                var methods = context.Response[Metadata.PushedAuthorizationRequestEndpointAuthMethodsSupported]?.GetUnnamedParameters();
-                if (methods is { Count: > 0 })
+                foreach (var method in (ImmutableArray<string?>?) context.Response[Metadata.PushedAuthorizationRequestEndpointAuthMethodsSupported] ?? [])
                 {
-                    for (var index = 0; index < methods.Count; index++)
+                    if (!string.IsNullOrEmpty(method))
                     {
-                        // Note: custom values are allowed in this case.
-                        var method = (string?) methods[index];
-                        if (!string.IsNullOrEmpty(method))
-                        {
-                            context.Configuration.PushedAuthorizationEndpointAuthMethodsSupported.Add(method);
-                        }
+                        context.Configuration.PushedAuthorizationEndpointAuthMethodsSupported.Add(method);
                     }
                 }
 
@@ -1372,17 +1294,11 @@ public static partial class OpenIddictClientHandlers
                 }
 
                 // Resolve the client authentication methods supported by the revocation endpoint, if available.
-                var methods = context.Response[Metadata.RevocationEndpointAuthMethodsSupported]?.GetUnnamedParameters();
-                if (methods is { Count: > 0 })
+                foreach (var method in (ImmutableArray<string?>?) context.Response[Metadata.RevocationEndpointAuthMethodsSupported] ?? [])
                 {
-                    for (var index = 0; index < methods.Count; index++)
+                    if (!string.IsNullOrEmpty(method))
                     {
-                        // Note: custom values are allowed in this case.
-                        var method = (string?) methods[index];
-                        if (!string.IsNullOrEmpty(method))
-                        {
-                            context.Configuration.RevocationEndpointAuthMethodsSupported.Add(method);
-                        }
+                        context.Configuration.RevocationEndpointAuthMethodsSupported.Add(method);
                     }
                 }
 
@@ -1415,17 +1331,11 @@ public static partial class OpenIddictClientHandlers
                 }
 
                 // Resolve the client authentication methods supported by the token endpoint, if available.
-                var methods = context.Response[Metadata.TokenEndpointAuthMethodsSupported]?.GetUnnamedParameters();
-                if (methods is { Count: > 0 })
+                foreach (var method in (ImmutableArray<string?>?) context.Response[Metadata.TokenEndpointAuthMethodsSupported] ?? [])
                 {
-                    for (var index = 0; index < methods.Count; index++)
+                    if (!string.IsNullOrEmpty(method))
                     {
-                        // Note: custom values are allowed in this case.
-                        var method = (string?) methods[index];
-                        if (!string.IsNullOrEmpty(method))
-                        {
-                            context.Configuration.TokenEndpointAuthMethodsSupported.Add(method);
-                        }
+                        context.Configuration.TokenEndpointAuthMethodsSupported.Add(method);
                     }
                 }
 
